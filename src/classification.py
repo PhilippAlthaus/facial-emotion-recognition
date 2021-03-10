@@ -1,26 +1,21 @@
 import itertools
-import os
-import warnings
 
 import cv2
-from sklearn.metrics import confusion_matrix
-
-from classes.datasets import load_fer2013
-
-warnings.simplefilter(action='ignore', category=FutureWarning)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.keras.regularizers import l2
+from classes.evaluation_plot import evaluation_line_plot
+
+from sklearn.metrics import confusion_matrix
+
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.regularizers import l2
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Dense, BatchNormalization, Dropout, Flatten, Conv2D, \
     MaxPooling2D
 
-from classes.evaluation_plot import evaluation_line_plot
+from datasets import load_fer2013
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -31,7 +26,7 @@ class EmotionClassifier:
     COLOR_CHANNELS = 3
 
     FILTERS = 32
-    CLASSES = 5  # 0=Angry, 1=Happy, 2=Sad, 3=Surprise, 4=Neutral
+    CLASSES = 7  # 0=Angry, 1=Happy, 2=Sad, 3=Surprise, 4=Neutral
 
     BATCH_SIZE = 64
     EPOCHS = 200
@@ -54,7 +49,7 @@ class EmotionClassifier:
             classes: Number of classes for the final predictions.
 
         Returns:
-            Numpy array(s) of predictions.
+            The base model.
         """
         input_shape = (self.IMAGE_WIDTH, self.IMAGE_HEIGHT, self.COLOR_CHANNELS)
 
@@ -179,11 +174,11 @@ class EmotionClassifier:
             Numpy array(s) of predictions.
         """
         # resize image to appropriate shape
-        input = cv2.resize(image, dsize=(48, 48), interpolation=cv2.INTER_CUBIC)
-        input = np.expand_dims(input, axis=0)
+        input_image = cv2.resize(image, dsize=(48, 48), interpolation=cv2.INTER_CUBIC)
+        input_image = np.expand_dims(input_image, axis=0)
 
         # calculate prediction
-        predictions = self.model.predict(input)
+        predictions = self.model.predict(input_image)
         prediction = np.argmax(predictions)
 
         return prediction
@@ -209,12 +204,12 @@ class EmotionClassifier:
         self._plot_confusion_matrix(cnf_matrix, classes=['angry', 'happy', 'sad', 'surprised', 'neutral'])
         plt.show()
 
-    def _plot_confusion_matrix(self, cm, classes, cmap='Blues'):
+    def _plot_confusion_matrix(self, cm, classes):
         """Plots the normalized confusion matrix."""
 
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.imshow(cm, interpolation='nearest', cmap='Blues')
         plt.colorbar()
         tick_marks = np.arange(len(classes))
         plt.xticks(tick_marks, classes, rotation=45)
